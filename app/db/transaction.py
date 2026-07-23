@@ -4,24 +4,8 @@ app/db/transaction.py — @transactional Decorator
 Provides a decorator that wraps async service methods in an explicit
 SQLAlchemy database transaction (session.begin()).
 
-Without this pattern every service method must repeat:
-    async with self.session.begin():
-        ...
-
-With @transactional:
-    @transactional
-    async def borrow_book(self, ...) -> BorrowRecord:
-        ...  # Transaction is managed automatically
-
-Design:
-  - The decorated method must belong to a class that exposes `self.session` as
-    an AsyncSession attribute.
-  - On success: the transaction is committed automatically.
-  - On any exception: the transaction is rolled back and the exception re-raised,
-    preserving the original traceback for logging and error handling.
-
-This is a senior-level infrastructure pattern that eliminates boilerplate
-transaction management from business logic while maintaining atomicity guarantees.
+If a transaction is already active on the session (e.g., from nested calls or active test session environments),
+the decorator propagates the active transaction block rather than beginning a duplicate one.
 """
 
 import functools
@@ -40,6 +24,11 @@ def transactional(func: F) -> F:
 
     @functools.wraps(func)
     async def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        # If transaction is already active, run the function under the active boundary
+        if self.session.in_transaction():
+            return await func(self, *args, **kwargs)
+
+        # Start a new transaction
         async with self.session.begin():
             return await func(self, *args, **kwargs)
 

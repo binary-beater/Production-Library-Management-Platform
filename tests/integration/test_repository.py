@@ -63,7 +63,7 @@ async def test_unique_constraint_email(db_session: AsyncSession) -> None:
 
     user1 = User(
         name="Dev One",
-        email="duplicate@example.com",
+        email="repo_duplicate@example.com",
         password_hash="hash1",
     )
     await user_repo.create(user1)
@@ -71,7 +71,7 @@ async def test_unique_constraint_email(db_session: AsyncSession) -> None:
 
     user2 = User(
         name="Dev Two",
-        email="duplicate@example.com",
+        email="repo_duplicate@example.com",
         password_hash="hash2",
     )
     await user_repo.create(user2)

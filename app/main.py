@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
+from app.api.v1.auth import router as auth_router
 from app.core.config import settings
 from app.core.logging import logger, setup_logging
 
@@ -31,6 +32,9 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+# Register versioned API routers
+app.include_router(auth_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])

@@ -145,6 +145,7 @@ def upgrade() -> None:
         "refresh_tokens",
         sa.Column("id", sa.String(length=36), nullable=False),
         sa.Column("user_id", sa.String(length=36), nullable=False),
+        sa.Column("family_id", sa.String(length=36), nullable=False),
         sa.Column("token_hash", sa.String(length=255), nullable=False),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("revoked", sa.Boolean(), server_default="0", nullable=False),
@@ -152,6 +153,15 @@ def upgrade() -> None:
             "token_type",
             sa.Enum("REFRESH", name="tokentype"),
             server_default="REFRESH",
+            nullable=False,
+        ),
+        sa.Column("ip_address", sa.String(length=45), nullable=True),
+        sa.Column("user_agent", sa.Text(), nullable=True),
+        sa.Column("device_name", sa.String(length=255), nullable=True),
+        sa.Column(
+            "last_used_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
             nullable=False,
         ),
         sa.Column(
@@ -171,6 +181,7 @@ def upgrade() -> None:
     )
     op.create_index("idx_refresh_token_hash", "refresh_tokens", ["token_hash"], unique=False)
     op.create_index("idx_refresh_user_id", "refresh_tokens", ["user_id"], unique=False)
+    op.create_index("idx_refresh_family_id", "refresh_tokens", ["family_id"], unique=False)
     op.create_table(
         "borrow_records",
         sa.Column("id", sa.String(length=36), nullable=False),
