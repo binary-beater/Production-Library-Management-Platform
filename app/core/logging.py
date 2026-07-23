@@ -1,10 +1,12 @@
 import logging
 import sys
+
 import structlog
+
 from app.core.config import settings
 
 
-def setup_logging():
+def setup_logging() -> None:
     log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
 
     structlog.configure(

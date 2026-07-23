@@ -55,7 +55,10 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "N", "UP", "PL", "RUF"]
-ignore = []
+ignore = [
+    "N802",     # allow UPPERCASE property functions like ASYNC_DATABASE_URI
+    "PLR2004"   # allow magic numbers (e.g. status code 200) in tests
+]
 
 [tool.mypy]
 python_version = "3.11"
@@ -66,7 +69,7 @@ ignore_missing_imports = true
 
 [tool.bandit]
 exclude_dirs = ["tests", "migrations"]
-skips = ["B101"]  # assert statements in tests
+skips = ["B101"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
