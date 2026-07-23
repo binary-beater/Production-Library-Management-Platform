@@ -1,10 +1,12 @@
 import logging
 import sys
+
 import structlog
+
 from app.core.config import settings
 
 
-def setup_logging():
+def setup_logging() -> None:
     log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
 
     structlog.configure(
@@ -12,7 +14,6 @@ def setup_logging():
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.StackInfoRenderer(),
-            structlog.dev.set_traceback,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.JSONRenderer(),
         ],
