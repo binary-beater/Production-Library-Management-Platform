@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.metrics import DASHBOARD_REQUESTS_TOTAL
 from app.repositories.dashboard_repository import DashboardRepository
 from app.services.base import BaseService
 
@@ -21,6 +22,7 @@ class DashboardService(BaseService):
     async def get_summary(self, days: int) -> dict[str, Any]:
         """Fetch all operational summaries, calculating SQL aggregations and capturing execution metrics."""
         start_time = time.perf_counter()
+        DASHBOARD_REQUESTS_TOTAL.inc()
 
         # Execute queries sequentially to prevent multi-threading session access collisions
         inventory = await self.dashboard_repo.get_inventory_summary()

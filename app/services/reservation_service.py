@@ -18,6 +18,7 @@ from app.core.exceptions import (
     ReservationLimitExceededException,
     ReservationNotFoundException,
 )
+from app.core.metrics import ACTIVE_RESERVATIONS, RESERVATION_PROMOTIONS_TOTAL
 from app.db.transaction import transactional
 from app.domain.enums import BorrowStatus, MembershipStatus, ReservationStatus
 from app.models.reservation import Reservation
@@ -118,6 +119,7 @@ class ReservationService(BaseService):
         await self.reservation_repo.create(reservation)
         await self.session.flush()
         await self.session.refresh(reservation)
+        ACTIVE_RESERVATIONS.inc()
 
         self._log_event(
             "reservation_created",
@@ -180,6 +182,7 @@ class ReservationService(BaseService):
             next_res.expires_at = now + datetime.timedelta(hours=settings.HOLD_DURATION_HOURS)
             await self.reservation_repo.update(next_res, update_data={})
             await self.session.flush()
+            RESERVATION_PROMOTIONS_TOTAL.inc()
 
             # Dynamic position is 1 since they are now promoted
             self._log_event(

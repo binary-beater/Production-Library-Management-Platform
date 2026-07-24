@@ -21,6 +21,7 @@ from app.core.exceptions import (
     RenewalLimitExceededException,
     ReservationNotHeldException,
 )
+from app.core.metrics import ACTIVE_BORROWINGS
 from app.domain.enums import BorrowStatus, MembershipStatus
 from app.models.borrow_record import BorrowRecord
 from app.models.member import Member
@@ -251,6 +252,7 @@ class BorrowService(BaseService):
             )
             await self.borrow_repo.create(record)
             await self.session.flush()
+            ACTIVE_BORROWINGS.inc()
 
             self._log_event(
                 "borrow_created",
