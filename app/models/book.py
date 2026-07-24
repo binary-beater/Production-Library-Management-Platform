@@ -10,6 +10,7 @@ from app.domain.enums import BookCondition
 
 if TYPE_CHECKING:
     from app.models.borrow_record import BorrowRecord
+    from app.models.reservation import Reservation
 
 
 class Book(Base, SoftDeleteMixin):
@@ -63,9 +64,14 @@ class Book(Base, SoftDeleteMixin):
         server_default=BookCondition.GOOD.value,
     )
 
-    # Relationships
     borrow_records: Mapped[list["BorrowRecord"]] = relationship(
         "BorrowRecord",
+        back_populates="book",
+        cascade="all, delete-orphan",
+    )
+
+    reservations: Mapped[list["Reservation"]] = relationship(
+        "Reservation",
         back_populates="book",
         cascade="all, delete-orphan",
     )

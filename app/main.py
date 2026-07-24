@@ -8,6 +8,8 @@ from fastapi import FastAPI
 from app.api.v1.auth import router as auth_router
 from app.api.v1.books import router as books_router
 from app.api.v1.borrow import router as borrow_router
+from app.api.v1.dashboard import router as dashboard_router
+from app.api.v1.reservations import router as reservations_router
 from app.core.config import settings
 from app.core.logging import logger, setup_logging
 
@@ -39,6 +41,8 @@ app = FastAPI(
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(books_router, prefix=settings.API_V1_STR)
 app.include_router(borrow_router, prefix=settings.API_V1_STR)
+app.include_router(reservations_router, prefix=settings.API_V1_STR)
+app.include_router(dashboard_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])

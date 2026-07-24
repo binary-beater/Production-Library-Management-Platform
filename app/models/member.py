@@ -11,6 +11,7 @@ from app.domain.enums import MembershipStatus
 
 if TYPE_CHECKING:
     from app.models.borrow_record import BorrowRecord
+    from app.models.reservation import Reservation
     from app.models.user import User
 
 
@@ -61,6 +62,12 @@ class Member(Base, SoftDeleteMixin):
 
     borrow_records: Mapped[list["BorrowRecord"]] = relationship(
         "BorrowRecord",
+        back_populates="member",
+        cascade="all, delete-orphan",
+    )
+
+    reservations: Mapped[list["Reservation"]] = relationship(
+        "Reservation",
         back_populates="member",
         cascade="all, delete-orphan",
     )

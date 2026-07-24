@@ -68,3 +68,13 @@ class TokenType(str, Enum):
     """
 
     REFRESH = "REFRESH"
+
+
+class ReservationStatus(str, Enum):
+    """State machine status representing the lifecycle of a book reservation."""
+
+    PENDING = "PENDING"
+    HOLD = "HOLD"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"

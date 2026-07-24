@@ -146,3 +146,38 @@ class ConcurrentBorrowException(ApplicationException):
 
     status_code: int = status.HTTP_409_CONFLICT
     detail: str = "Operation failed due to concurrent modification conflicts"
+
+
+class ReservationLimitExceededException(ApplicationException):
+    """Raised when a member has reached the active reservation limit (3 books)."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Member has reached maximum active reservations limit"
+
+
+class AlreadyReservedException(ApplicationException):
+    """Raised when a member already has an active reservation for this book."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Member already has an active reservation for this book"
+
+
+class BookAlreadyBorrowedException(ApplicationException):
+    """Raised when a member tries to reserve a book they already have checked out."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Member already has this book checked out"
+
+
+class ReservationNotFoundException(ApplicationException):
+    """Raised when a requested reservation is not found."""
+
+    status_code: int = status.HTTP_404_NOT_FOUND
+    detail: str = "Reservation not found"
+
+
+class ReservationNotHeldException(ApplicationException):
+    """Raised when trying to checkout a book reserved for another member."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "This book is currently held for another member's reservation"

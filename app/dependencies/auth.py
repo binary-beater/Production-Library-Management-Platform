@@ -19,12 +19,16 @@ from app.domain.enums import UserRole, UserStatus
 from app.models.user import User
 from app.repositories.book_repository import BookRepository
 from app.repositories.borrow_repository import BorrowRecordRepository
+from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.member_repository import MemberRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
+from app.repositories.reservation_repository import ReservationRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.services.book_service import BookService
 from app.services.borrow_service import BorrowService
+from app.services.dashboard_service import DashboardService
+from app.services.reservation_service import ReservationService
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -121,14 +125,45 @@ def get_book_service(db: Annotated[AsyncSession, Depends(get_db)]) -> BookServic
     return BookService(session=db, book_repo=book_repo)
 
 
+def get_reservation_service(db: Annotated[AsyncSession, Depends(get_db)]) -> ReservationService:
+    """Dependency provider for ReservationService."""
+    reservation_repo = ReservationRepository(db)
+    book_repo = BookRepository(db)
+    member_repo = MemberRepository(db)
+    borrow_repo = BorrowRecordRepository(db)
+    return ReservationService(
+        session=db,
+        reservation_repo=reservation_repo,
+        book_repo=book_repo,
+        member_repo=member_repo,
+        borrow_repo=borrow_repo,
+    )
+
+
 def get_borrow_service(db: Annotated[AsyncSession, Depends(get_db)]) -> BorrowService:
     """Dependency provider for BorrowService."""
     member_repo = MemberRepository(db)
     book_repo = BookRepository(db)
     borrow_repo = BorrowRecordRepository(db)
+    # Instantiate ReservationService manually to avoid circular dependencies
+    reservation_repo = ReservationRepository(db)
+    reservation_service = ReservationService(
+        session=db,
+        reservation_repo=reservation_repo,
+        book_repo=book_repo,
+        member_repo=member_repo,
+        borrow_repo=borrow_repo,
+    )
     return BorrowService(
         session=db,
         member_repo=member_repo,
         book_repo=book_repo,
         borrow_repo=borrow_repo,
+        reservation_service=reservation_service,
     )
+
+
+def get_dashboard_service(db: Annotated[AsyncSession, Depends(get_db)]) -> DashboardService:
+    """Dependency provider for DashboardService."""
+    dashboard_repo = DashboardRepository(db)
+    return DashboardService(session=db, dashboard_repo=dashboard_repo)

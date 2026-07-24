@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     MAX_BORROW_LIMIT: int = 5
     DEFAULT_BORROW_DAYS: int = 14
     MAX_RENEWAL_LIMIT: int = 2
+    HOLD_DURATION_HOURS: int = 48
 
     # Observability Settings
     LOG_LEVEL: str = "INFO"

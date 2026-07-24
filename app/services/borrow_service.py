@@ -19,9 +19,11 @@ from app.core.exceptions import (
     MemberSuspendedException,
     OverdueMemberException,
     RenewalLimitExceededException,
+    ReservationNotHeldException,
 )
 from app.domain.enums import BorrowStatus, MembershipStatus
 from app.models.borrow_record import BorrowRecord
+from app.models.member import Member
 from app.repositories.book_repository import BookRepository
 from app.repositories.borrow_repository import BorrowRecordRepository
 from app.repositories.member_repository import MemberRepository
@@ -104,6 +106,7 @@ class BorrowService(BaseService):
         max_borrow_limit: int = 5,
         borrow_days: int = 14,
         renewal_days: int = 14,
+        reservation_service: Any = None,
     ) -> None:
         """Initialize service with dependencies."""
         super().__init__(session)
@@ -115,6 +118,7 @@ class BorrowService(BaseService):
         self.max_borrow_limit = max_borrow_limit
         self.borrow_days = borrow_days
         self.renewal_days = renewal_days
+        self.reservation_service = reservation_service
 
     def _log_event(self, event: str, level: str = "info", **kwargs: Any) -> None:
         """Helper to write structured JSON log entries."""
@@ -123,6 +127,37 @@ class BorrowService(BaseService):
             logger.error(json.dumps(log_payload))
         else:
             logger.info(json.dumps(log_payload))
+
+    async def _validate_member_for_borrow(self, member: Member) -> None:
+        """Validate member status, active overdue holds, and maximum borrow limit rules."""
+        member_id = member.id
+        if member.membership_status != MembershipStatus.ACTIVE:
+            self._log_event(
+                "borrow_rejected",
+                reason="MEMBER_NOT_ACTIVE",
+                member_id=str(member_id),
+                status=member.membership_status.value,
+            )
+            if member.membership_status == MembershipStatus.SUSPENDED:
+                raise MemberSuspendedException()
+            raise MemberInactiveException()
+
+        # Validate overdue loans block
+        overdue_count = await self.borrow_repo.get_overdue_by_member_id_count(member_id)
+        if overdue_count > 0:
+            self._log_event("borrow_rejected", reason="OVERDUE_BOOKS", member_id=str(member_id))
+            raise OverdueMemberException()
+
+        # Validate maximum active borrow limits
+        active_count = len(await self.borrow_repo.get_active_by_member_id(member_id))
+        if active_count >= self.max_borrow_limit:
+            self._log_event(
+                "borrow_rejected",
+                reason="BORROW_LIMIT_EXCEEDED",
+                member_id=str(member_id),
+                active_count=active_count,
+            )
+            raise BorrowLimitExceededException()
 
     async def borrow_book(self, member_id: uuid.UUID, book_id: uuid.UUID) -> BorrowRecord:
         """Check out a book, validating limits and acquiring pessimistic locks.
@@ -147,34 +182,8 @@ class BorrowService(BaseService):
                 )
                 raise ValueError("Member not found")
 
-            # Validate member standing
-            if member.membership_status != MembershipStatus.ACTIVE:
-                self._log_event(
-                    "borrow_rejected",
-                    reason="MEMBER_NOT_ACTIVE",
-                    member_id=str(member_id),
-                    status=member.membership_status.value,
-                )
-                if member.membership_status == MembershipStatus.SUSPENDED:
-                    raise MemberSuspendedException()
-                raise MemberInactiveException()
-
-            # Validate overdue loans block
-            overdue_count = await self.borrow_repo.get_overdue_by_member_id_count(member_id)
-            if overdue_count > 0:
-                self._log_event("borrow_rejected", reason="OVERDUE_BOOKS", member_id=str(member_id))
-                raise OverdueMemberException()
-
-            # Validate maximum active borrow limits
-            active_count = len(await self.borrow_repo.get_active_by_member_id(member_id))
-            if active_count >= self.max_borrow_limit:
-                self._log_event(
-                    "borrow_rejected",
-                    reason="BORROW_LIMIT_EXCEEDED",
-                    member_id=str(member_id),
-                    active_count=active_count,
-                )
-                raise BorrowLimitExceededException()
+            # Run extracted member validations
+            await self._validate_member_for_borrow(member)
 
             # 2. Acquire write lock on Book row
             book = await self.book_repo.get_by_id_for_update(book_id)
@@ -182,14 +191,50 @@ class BorrowService(BaseService):
                 self._log_event("borrow_rejected", reason="BOOK_NOT_FOUND", book_id=str(book_id))
                 raise BookNotFoundException()
 
-            # Validate book copies availability
-            if book.available_copies <= 0:
+            # Acquire write lock on any active HOLD reservation for this book
+            from sqlalchemy import select
+
+            from app.domain.enums import ReservationStatus
+            from app.models.reservation import Reservation
+
+            res_stmt = (
+                select(Reservation)
+                .where(
+                    Reservation.book_id == str(book_id),
+                    Reservation.status == ReservationStatus.HOLD,
+                )
+                .with_for_update()
+            )
+            res_result = await self.session.execute(res_stmt)
+            active_hold = res_result.scalar_one_or_none()
+
+            reservation_completed = False
+            if active_hold:
+                if str(active_hold.member_id) == str(member_id):
+                    # Permitted: This member holds the reservation
+                    active_hold.status = ReservationStatus.COMPLETED
+                    active_hold.expires_at = None
+                    await self.session.flush()
+                    reservation_completed = True
+                else:
+                    # Blocked: Held for another user
+                    self._log_event(
+                        "borrow_rejected",
+                        reason="RESERVATION_HELD_FOR_OTHER",
+                        book_id=str(book_id),
+                        member_id=str(member_id),
+                    )
+                    raise ReservationNotHeldException()
+
+            # Validate book copies availability if not checking out a held reservation
+            if not reservation_completed and book.available_copies <= 0:
                 self._log_event("borrow_rejected", reason="BOOK_UNAVAILABLE", book_id=str(book_id))
                 raise BookUnavailableException()
 
-            # Decrement inventory and save
-            book.available_copies -= 1
-            await self.book_repo.update(book, update_data={})
+            # Decrement inventory and save (only if not checking out a held reservation)
+            if not reservation_completed:
+                book.available_copies -= 1
+                await self.book_repo.update(book, update_data={})
 
             # Create borrow checkout entry
             now = datetime.datetime.now(datetime.UTC)
@@ -242,24 +287,28 @@ class BorrowService(BaseService):
                 self._log_event("borrow_returned_idempotent", borrow_id=str(borrow_record_id))
                 return record
 
-            # Lock matching Book row to restore inventory copies
-            book = await self.book_repo.get_by_id_for_update(record.book_id)
-            if book:
-                book.available_copies += 1
-                await self.book_repo.update(book, update_data={})
-
-            now = datetime.datetime.now(datetime.UTC)
-
             # Calculate overdue fines if returned late
+            now = datetime.datetime.now(datetime.UTC)
             fine_incurred = self.fine_calculator.calculate_fine(record.due_date, now)
 
             # Update borrow record properties
             record.return_date = now
             record.status = BorrowStatus.RETURNED
-            record.fine_amount = fine_incurred  # type: ignore[attr-defined] # fine_amount is supported on schema details
+            record.fine_amount = fine_incurred  # type: ignore[attr-defined]
 
             await self.borrow_repo.update(record, update_data={})
             await self.session.flush()
+
+            # Delegate promotion flow to ReservationService if wired
+            if self.reservation_service:
+                await self.reservation_service.promote_next_reservation(record.book_id)
+            else:
+                # Lock matching Book row to restore inventory copies
+                book = await self.book_repo.get_by_id_for_update(record.book_id)
+                if book:
+                    book.available_copies += 1
+                    await self.book_repo.update(book, update_data={})
+                    await self.session.flush()
 
             self._log_event(
                 "borrow_returned",
