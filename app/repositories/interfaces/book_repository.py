@@ -1,3 +1,4 @@
+import uuid
 from typing import Protocol
 
 from app.models.book import Book
@@ -6,6 +7,8 @@ from app.repositories.interfaces.base import BaseRepositoryInterface
 
 class BookRepositoryInterface(BaseRepositoryInterface[Book], Protocol):
     """Protocol defining book-specific database queries."""
+
+    async def get_by_id_for_update(self, id: uuid.UUID) -> Book | None: ...
 
     async def get_by_isbn(self, isbn: str) -> Book | None: ...
 

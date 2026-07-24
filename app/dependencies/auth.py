@@ -17,10 +17,14 @@ from app.core.security import JWTManager, PasswordHasher
 from app.db.session import get_db
 from app.domain.enums import UserRole, UserStatus
 from app.models.user import User
+from app.repositories.book_repository import BookRepository
+from app.repositories.borrow_repository import BorrowRecordRepository
 from app.repositories.member_repository import MemberRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
+from app.services.book_service import BookService
+from app.services.borrow_service import BorrowService
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -109,3 +113,22 @@ class RoleRequirement:
         if current_user.role not in self.allowed_roles:
             raise ForbiddenException()
         return current_user
+
+
+def get_book_service(db: Annotated[AsyncSession, Depends(get_db)]) -> BookService:
+    """Dependency provider for BookService."""
+    book_repo = BookRepository(db)
+    return BookService(session=db, book_repo=book_repo)
+
+
+def get_borrow_service(db: Annotated[AsyncSession, Depends(get_db)]) -> BorrowService:
+    """Dependency provider for BorrowService."""
+    member_repo = MemberRepository(db)
+    book_repo = BookRepository(db)
+    borrow_repo = BorrowRecordRepository(db)
+    return BorrowService(
+        session=db,
+        member_repo=member_repo,
+        book_repo=book_repo,
+        borrow_repo=borrow_repo,
+    )

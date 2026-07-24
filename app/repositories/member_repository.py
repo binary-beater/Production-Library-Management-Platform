@@ -47,6 +47,13 @@ class MemberRepository(BaseRepository[Member], MemberRepositoryInterface):
         )
         return result.scalar_one_or_none()
 
+    async def get_by_id_for_update(self, id: uuid.UUID) -> Member | None:
+        """Fetch a single member by ID, acquiring a write lock (FOR UPDATE)."""
+        result = await self.session.execute(
+            select(Member).where(Member.id == str(id), Member.is_deleted == False).with_for_update()
+        )
+        return result.scalar_one_or_none()
+
     async def delete(self, id: uuid.UUID) -> bool:
         """Enforce soft delete action instead of hard row purge."""
         member = await self.get_by_id(id)

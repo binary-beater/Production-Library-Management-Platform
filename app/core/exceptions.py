@@ -73,3 +73,76 @@ class ForbiddenException(ApplicationException):
 
     status_code: int = status.HTTP_403_FORBIDDEN
     detail: str = "You do not have permission to access this resource"
+
+
+# ─── Library Operations Exception Classes ──────────────────────────────────────
+
+
+class BookNotFoundException(ApplicationException):
+    """Raised when a requested book is not found in the inventory."""
+
+    status_code: int = status.HTTP_404_NOT_FOUND
+    detail: str = "Book not found"
+
+
+class BookUnavailableException(ApplicationException):
+    """Raised when a book exists but has 0 available copies."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Book is currently out of stock"
+
+
+class BookDeletedException(ApplicationException):
+    """Raised when trying to perform operations on a soft-deleted book."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Book is soft-deleted and cannot be modified or borrowed"
+
+
+class BorrowLimitExceededException(ApplicationException):
+    """Raised when a member has reached the maximum borrowing limit (5 books)."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Member has reached maximum borrowing limit"
+
+
+class MemberInactiveException(ApplicationException):
+    """Raised when trying to borrow books with an inactive member status."""
+
+    status_code: int = status.HTTP_403_FORBIDDEN
+    detail: str = "Member profile is inactive"
+
+
+class MemberSuspendedException(ApplicationException):
+    """Raised when trying to borrow books with a suspended member status."""
+
+    status_code: int = status.HTTP_403_FORBIDDEN
+    detail: str = "Member profile is suspended"
+
+
+class BookAlreadyReturnedException(ApplicationException):
+    """Raised when trying to return or renew an already returned borrow record."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Book has already been returned"
+
+
+class RenewalLimitExceededException(ApplicationException):
+    """Raised when a borrow record has already been renewed the maximum allowed times (2 times)."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Maximum renewal limit has been reached"
+
+
+class OverdueMemberException(ApplicationException):
+    """Raised when a member is blocked from checking out due to having active overdue loans."""
+
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    detail: str = "Member is blocked due to active overdue borrow records"
+
+
+class ConcurrentBorrowException(ApplicationException):
+    """Raised when concurrent operations conflict on lock states."""
+
+    status_code: int = status.HTTP_409_CONFLICT
+    detail: str = "Operation failed due to concurrent modification conflicts"
