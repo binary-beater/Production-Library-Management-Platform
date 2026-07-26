@@ -16,7 +16,9 @@ from app.main import app
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-TEST_DATABASE_URI = settings.ASYNC_DATABASE_URI.replace("@db:", "@localhost:")
+TEST_DATABASE_URI = settings.ASYNC_DATABASE_URI.replace("@db:", "@localhost:").replace(
+    "/lmp_db", "/lmp_db_test"
+)
 
 test_engine = create_async_engine(
     TEST_DATABASE_URI,
