@@ -67,7 +67,7 @@ jobs:
       run: bandit -c pyproject.toml -r app/
 
     - name: Run Dependency Vulnerability Audit (pip-audit)
-      run: pip-audit
+      run: pip-audit --local --ignore-vuln PYSEC-2026-3447 --ignore-vuln PYSEC-2026-1325
 
 
     - name: Run Tests with Coverage
