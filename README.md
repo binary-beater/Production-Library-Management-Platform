@@ -1,66 +1,69 @@
-# Library Management Platform (LMP)
+# 📚 Production Library Management Platform
 
-A production-grade backend platform built with FastAPI, SQLAlchemy 2.0, Alembic, MySQL 8.0, Docker, PyTest, Keploy, OpenTelemetry, Prometheus, and GitHub Actions.
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red)
+![Docker](https://img.shields.io/badge/Docker-Ready-blue)
+![Tests](https://img.shields.io/badge/Tests-68_Passing-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
----
-
-## 1. System Architecture & Component Diagram
-
-```text
-               Client (HTTP / REST)
-                        │
-             FastAPI API Routers (`app/api/v1`)
-                        │
-          Request Middleware & Correlation ID (`app/middleware`)
-                        │
-          Security Guards & Auth Dependencies (`app/security`, `app/dependencies`)
-                        │
-             Business Logic Service Layer (`app/services`)
-                        │
-             Repository Data Access Layer (`app/repositories`)
-                        │
-             SQLAlchemy 2.0 ORM Engine & MySQL 8.0 (`app/models`, `app/db`)
-```
+A production-grade backend platform built with **FastAPI**, **SQLAlchemy 2.0**, and **MySQL 8.0**. The system implements secure JWT Authentication, Single-Use Refresh Token Rotation (RTR), soft-deletions, fine calculations, and a high-concurrency FIFO hold-queue for reserving books.
 
 ---
 
-## 2. Directory Structure Standards
+## 🛠️ Tech Stack
 
-```text
-app/
-├── api/v1/         # FastAPI Routers (v1 Endpoints)
-├── core/           # Config, Security utilities, Structured JSON Logger
-├── db/             # SQLAlchemy Engine, SessionLocal, Base ORM
-├── dependencies/   # FastAPI Dependency Injections (Auth, DB, Services)
-├── exceptions/     # Centralized Exception Handlers & Custom Exceptions
-├── middleware/     # Correlation ID & Request timing middleware
-├── models/         # SQLAlchemy Declarative Models
-├── repositories/   # Async Repository Data Access Layer
-├── schemas/        # Pydantic v2 Serialization & Validation Schemas
-├── services/       # Pure Business Logic Layer
-└── utils/          # Pagination & Helper Utilities
-
-tests/
-├── unit/           # Service Unit Tests (Mocks)
-├── integration/    # Repository & Database Integration Tests
-└── api/            # End-to-End API Integration Tests
-
-docs/
-├── adr/            # Architecture Decision Records (0001 to 0015)
-├── 00-vision.md
-├── 01-functional-requirements.md
-├── 02-non-functional-requirements.md
-├── 03-architecture.md
-└── repository-standards.md
-
-metrics/            # Benchmark reports, coverage XML, evidence files
-```
+| Layer | Technology |
+|---|---|
+| **Backend Framework** | FastAPI |
+| **Language** | Python 3.11+ |
+| **ORM** | SQLAlchemy 2.0 (Async Engine) |
+| **Database** | MySQL 8.0 |
+| **Validation** | Pydantic v2 |
+| **Authentication** | JWT (JSON Web Tokens) |
+| **Migrations** | Alembic |
+| **Testing** | PyTest (with coverage tracking) |
+| **Monitoring** | Prometheus Metrics |
+| **Tracing** | OpenTelemetry |
+| **Logging** | Structlog (Structured JSON) |
+| **Containerization** | Docker & Docker Compose |
 
 ---
 
-## 3. Implemented API & Functional Scope
+## ✨ Features
 
-The platform exposes versioned HTTP REST endpoints (`/api/v1`) enforcing Role-Based Access Control (RBAC):
+- **JWT Authentication**: Secure stateless authentication using Access and Refresh tokens.
+- **Refresh Token Rotation (RTR)**: Single-use refresh token rotation to mitigate replay attacks.
+- **Role-Based Access Control (RBAC)**: Fine-grained user role guards (`ADMIN`, `LIBRARIAN`, `MEMBER`).
+- **Book Inventory Management**: Complete CRUD operations with soft-deletion support.
+- **Borrow / Return / Renew**: Seamless loans workflow supporting renewal limits (max 2 renewals) and dynamic fine calculations.
+- **FIFO Reservation Queue**: Automated FIFO queue holding system with real-time queue position calculations.
+- **Dashboard Analytics**: Dynamic dashboard metrics aggregated directly in SQL database queries.
+- **Observability**: Rich telemetry including OpenTelemetry tracing, Prometheus metrics, and Structured JSON logging.
+
+---
+
+## 🏗️ Architecture & Design Patterns
+
+The application follows strict **Clean Architecture** principles and keeps the domain layer completely isolated from transport and persistence concerns:
+
+* **Router Layer (`app/api`)**: Translates HTTP requests and delegates validations to Pydantic schemas.
+* **Service Layer (`app/services`)**: Contains pure business logic and transactional boundaries.
+* **Repository Layer (`app/repositories`)**: Isolates persistence operations through async data access repository models.
+* **Database Layer (`app/models`, `app/db`)**: Manages declarative schemas and connection pools.
+
+### Implemented Design Patterns
+* **Repository Pattern**: Abstracting data retrieval and persistence.
+* **Dependency Injection**: Injecting database sessions, repositories, and services into routers and services.
+* **Service Layer Pattern**: Separating business operations from route handlers.
+* **Strategy Pattern**: Dynamic overdue fine calculations (`FlatDailyFineStrategy`).
+* **Protocol/Adapter Pattern**: Decoupling reservation holds policies (`ReservationPolicy`).
+
+---
+
+## 📡 API Endpoints & Functional Scope
+
+The platform exposes versioned HTTP REST endpoints (`/api/v1`) enforcing RBAC:
 
 ### 🔑 Authentication (`/api/v1/auth`)
 * `POST /register` - Register a new account (all roles).
@@ -74,7 +77,7 @@ The platform exposes versioned HTTP REST endpoints (`/api/v1`) enforcing Role-Ba
 * `GET /{id}` - Retrieve details of a specific book.
 * `POST /` - Register new book (Admin/Librarian).
 * `PATCH /{id}` - Update book metadata & inventory levels (Admin/Librarian).
-* `DELETE /{id}` - Soft-delete a book record (Admin/Librarian).
+* `DELETE /{id}` - Soft-delete a book (Admin/Librarian).
 
 ### 📖 Borrow & Return (`/api/v1/borrow`)
 * `POST /` - Checkout book (limits to 5 checkouts, active status checks).
@@ -93,7 +96,47 @@ The platform exposes versioned HTTP REST endpoints (`/api/v1`) enforcing Role-Ba
 
 ---
 
-## 4. Quick Start (Local & Docker)
+## 🔒 Security & Hardening
+
+* **Password Hashing**: Stored securely using Argon2/bcrypt hashes.
+* **RTR Safety**: Reusing a rotated refresh token immediately revokes the entire token family.
+* **Soft Deletes**: Uses logical deletions to prevent referential integrity failures on historical borrow records.
+* **SQL Injection Prevention**: Full parameterization using SQLAlchemy's async engine queries.
+* **Docker Hardening**: Multi-stage Slim Docker build executing under a non-root system user (`USER appuser`).
+
+---
+
+## 📊 Observability & Metrics
+
+* **Structured Logging**: Contextual structured logging using `structlog`.
+* **Trace Propagation**: Auto-instrumented route spans with correlation IDs (`x-request-id`) injected into logs and headers.
+* **Prometheus Metrics**: Exposes metrics (`/metrics`) tracking HTTP request latencies, active borrows, active reservations, and queue promotions.
+* **Health Checks**: Segmented `/health/live` (process status) and `/health/ready` (active DB connectivity query check) endpoints.
+
+---
+
+## 🧪 Testing
+
+The repository has 68 automated unit, integration, and E2E API tests running against an isolated test environment.
+
+### Run Formatting
+```bash
+ruff check .
+```
+
+### Type Checking
+```bash
+mypy .
+```
+
+### Run Tests & Generate Coverage
+```bash
+pytest --cov=app --cov-report=term-missing
+```
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose
@@ -108,28 +151,43 @@ cd "Production Library Management Platform"
 # Launch application and MySQL 8.0 container
 docker compose up --build
 ```
-- Interactive Swagger API Documentation: `http://localhost:8000/docs`
-- Production Health Check Endpoint: `http://localhost:8000/health`
+* **Swagger API Documentation**: `http://localhost:8000/docs`
+* **Health Check**: `http://localhost:8000/health/live`
 
-### Running Tests locally
+### Running locally
 ```bash
 # Install dependencies
 pip install -e ".[dev]"
 
-# Run full test suite with coverage report
-pytest
+# Setup DB configuration in .env and run migrations
+alembic upgrade head
+
+# Start local server
+$env:MYSQL_SERVER="localhost"; uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ---
 
-## 5. Key Architectural Highlights
-- **FastAPI Lifespan Context Manager**: Clean async startup/shutdown resource orchestration.
-- **Single-Use Refresh Token Rotation**: Server-side token revocation table (`refresh_tokens`).
-- **Soft Deletes**: `is_deleted` and `deleted_at` fields on catalog objects preserve referential integrity.
-- **Immutable Borrow History**: Borrow state transitions (`BORROWED`, `RETURNED`, `RENEWED`, `OVERDUE`).
-- **Connection Pool Hardening**: Tuned SQLAlchemy pool parameters (`pool_size=10`, `max_overflow=20`, `pool_recycle=1800`).
+## 📁 Documentation
+
+Detailed documentation, design architecture files, and ADRs are stored under the `docs/` directory:
+- [00-vision.md](docs/00-vision.md) — Vision and Project Goals.
+- [01-functional-requirements.md](docs/01-functional-requirements.md) — Functional Specifications.
+- [02-non-functional-requirements.md](docs/02-non-functional-requirements.md) — Performance Targets & Observability.
+- [03-architecture.md](docs/03-architecture.md) — ER, Sequence, and FIFO holds diagrams.
+- [docs/adr/](docs/adr/) — Architecture Decision Records (0001 to 0015).
 
 ---
 
-## 6. Resume Evidence & Validation
-Every metric on the resume is substantiated by evidence recorded in `docs/resume-validation.md` and CI outputs in `metrics/`.
+## 🗺️ Roadmap & Future Improvements
+
+- **Redis Caching Layer**: Cache popular books query counts and metadata.
+- **Email Notifications**: Async worker notifications for hold expiration and overdue warnings.
+- **Elasticsearch Integration**: Fuzzy search capabilities on catalog titles, authors, and genres.
+- **Kubernetes Deployment**: Helm charts for production orchestration.
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
