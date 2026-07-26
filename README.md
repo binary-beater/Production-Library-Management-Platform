@@ -58,7 +58,42 @@ metrics/            # Benchmark reports, coverage XML, evidence files
 
 ---
 
-## 3. Quick Start (Local & Docker)
+## 3. Implemented API & Functional Scope
+
+The platform exposes versioned HTTP REST endpoints (`/api/v1`) enforcing Role-Based Access Control (RBAC):
+
+### 🔑 Authentication (`/api/v1/auth`)
+* `POST /register` - Register a new account (all roles).
+* `POST /login` - Login exchanging credentials for access token & refresh token.
+* `POST /refresh` - Rotate refresh token (Single-Use RTR policy).
+* `POST /logout` - Invalidate active session and revoke refresh tokens.
+* `GET /me` - Retrieve authenticated user profile details.
+
+### 📚 Books Catalog (`/api/v1/books`)
+* `GET /` - Search/filter books with pagination (title/author/ISBN/genre).
+* `GET /{id}` - Retrieve details of a specific book.
+* `POST /` - Register new book (Admin/Librarian).
+* `PATCH /{id}` - Update book metadata & inventory levels (Admin/Librarian).
+* `DELETE /{id}` - Soft-delete a book record (Admin/Librarian).
+
+### 📖 Borrow & Return (`/api/v1/borrow`)
+* `POST /` - Checkout book (limits to 5 checkouts, active status checks).
+* `POST /{id}/renew` - Renew book due date by 14 days (max 2 renewals).
+* `POST /{id}/return` - Return book (idempotent, calculates overdue fine).
+* `GET /history` - View own borrowing history with paginated search.
+
+### ⏳ Reservations & Queue holds (`/api/v1/reservations`)
+* `POST /` - Reserve an out-of-stock book (FIFO queue positioning).
+* `POST /{id}/cancel` - Soft-cancel reservation, immediately promoting the next inline user.
+* `GET /active` - List own active reservations with queue positions.
+* `POST /sweep` - Sweep expired holds and auto-promote queue (Admin/Librarian).
+
+### 📊 Dashboard & Analytics (`/api/v1/dashboard/summary`)
+* `GET /summary` - Calculate metrics (inventory totals, active checkouts, overdue velocity, popular books) over dynamic time windows using database-level SQL aggregations.
+
+---
+
+## 4. Quick Start (Local & Docker)
 
 ### Prerequisites
 - Docker & Docker Compose
@@ -87,7 +122,7 @@ pytest
 
 ---
 
-## 4. Key Architectural Highlights
+## 5. Key Architectural Highlights
 - **FastAPI Lifespan Context Manager**: Clean async startup/shutdown resource orchestration.
 - **Single-Use Refresh Token Rotation**: Server-side token revocation table (`refresh_tokens`).
 - **Soft Deletes**: `is_deleted` and `deleted_at` fields on catalog objects preserve referential integrity.
@@ -96,5 +131,5 @@ pytest
 
 ---
 
-## 5. Resume Evidence & Validation
+## 6. Resume Evidence & Validation
 Every metric on the resume is substantiated by evidence recorded in `docs/resume-validation.md` and CI outputs in `metrics/`.

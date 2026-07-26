@@ -22,6 +22,7 @@ from app.core.exceptions import (
     ReservationNotHeldException,
 )
 from app.core.metrics import ACTIVE_BORROWINGS
+from app.db.transaction import transactional
 from app.domain.enums import BorrowStatus, MembershipStatus
 from app.models.borrow_record import BorrowRecord
 from app.models.member import Member
@@ -160,6 +161,7 @@ class BorrowService(BaseService):
             )
             raise BorrowLimitExceededException()
 
+    @transactional
     async def borrow_book(self, member_id: uuid.UUID, book_id: uuid.UUID) -> BorrowRecord:
         """Check out a book, validating limits and acquiring pessimistic locks.
 
@@ -266,6 +268,7 @@ class BorrowService(BaseService):
             self._log_event("borrow_concurrency_conflict", level="error", error=str(e))
             raise ConcurrentBorrowException() from e
 
+    @transactional
     async def return_book(self, borrow_record_id: uuid.UUID) -> BorrowRecord:
         """Return a borrowed book, calculating fines and restoring copy counts.
 
@@ -324,6 +327,7 @@ class BorrowService(BaseService):
             self._log_event("borrow_return_concurrency_conflict", level="error", error=str(e))
             raise ConcurrentBorrowException() from e
 
+    @transactional
     async def renew_book(self, borrow_record_id: uuid.UUID) -> BorrowRecord:
         """Renew the borrow checkout, extending due dates if policies permit.
 

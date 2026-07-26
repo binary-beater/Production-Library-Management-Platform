@@ -24,12 +24,26 @@ def transactional(func: F) -> F:
 
     @functools.wraps(func)
     async def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-        # If transaction is already active, run the function under the active boundary
-        if self.session.in_transaction():
-            return await func(self, *args, **kwargs)
+        if not hasattr(self.session, "_transactional_depth"):
+            self.session._transactional_depth = 0
 
-        # Start a new transaction
-        async with self.session.begin():
-            return await func(self, *args, **kwargs)
+        if self.session._transactional_depth > 0:
+            self.session._transactional_depth += 1
+            try:
+                return await func(self, *args, **kwargs)
+            finally:
+                self.session._transactional_depth -= 1
+        else:
+            self.session._transactional_depth = 1
+            try:
+                # If the session has an active implicit transaction (from prior read queries),
+                # commit it first to clear the transaction state before starting our explicit write block.
+                if self.session.in_transaction():
+                    await self.session.commit()
+
+                async with self.session.begin():
+                    return await func(self, *args, **kwargs)
+            finally:
+                self.session._transactional_depth -= 1
 
     return wrapper  # type: ignore[return-value]
