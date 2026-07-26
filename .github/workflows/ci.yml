@@ -63,6 +63,13 @@ jobs:
     - name: Run MyPy Type Checking
       run: mypy .
 
+    - name: Run Bandit Security Scanner
+      run: bandit -c pyproject.toml -r app/
+
+    - name: Run Dependency Vulnerability Audit (pip-audit)
+      run: pip-audit
+
+
     - name: Run Tests with Coverage
       env:
         MYSQL_SERVER: 127.0.0.1
