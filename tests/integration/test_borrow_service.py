@@ -320,7 +320,7 @@ async def test_return_book_calculates_fine_and_restores_inventory(
     returned = await borrow_service.return_book(record.id)
     assert returned.status == BorrowStatus.RETURNED
     # 6 days * 0.50 rate = 3.00 fine
-    assert returned.fine_amount == 3.00
+    assert returned.fine_amount == 3.00  # type: ignore[attr-defined]
 
     # Inventory copies must be restored
     await db_session.refresh(book)

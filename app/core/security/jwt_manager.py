@@ -64,7 +64,7 @@ class JWTManager:
         if additional_claims:
             claims.update(additional_claims)
 
-        return jwt.encode(claims, self.signing_key, algorithm=self.algorithm)
+        return str(jwt.encode(claims, self.signing_key, algorithm=self.algorithm))
 
     def decode_and_validate_token(self, token: str) -> dict[str, Any]:
         """Decode and validate a JWT access token.

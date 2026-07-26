@@ -19,7 +19,7 @@ class PasswordHasher:
         Returns:
             The hashed password string.
         """
-        return self.pwd_context.hash(password)
+        return str(self.pwd_context.hash(password))
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a plain password against a hash.
@@ -31,4 +31,4 @@ class PasswordHasher:
         Returns:
             True if the password matches the hash, False otherwise.
         """
-        return self.pwd_context.verify(plain_password, hashed_password)
+        return bool(self.pwd_context.verify(plain_password, hashed_password))

@@ -1,15 +1,13 @@
 import datetime
-import logging
 import time
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import logger
 from app.core.metrics import DASHBOARD_REQUESTS_TOTAL
 from app.repositories.dashboard_repository import DashboardRepository
 from app.services.base import BaseService
-
-logger = logging.getLogger(__name__)
 
 
 class DashboardService(BaseService):

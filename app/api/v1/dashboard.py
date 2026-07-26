@@ -26,9 +26,10 @@ async def get_dashboard_summary(
             le=365,
         ),
     ] = 30,
-    dashboard_service: Annotated[DashboardService, Depends(get_dashboard_service)] = None,
+    dashboard_service: Annotated[DashboardService | None, Depends(get_dashboard_service)] = None,
 ) -> APIResponse:
     """Retrieve operational analytics summary dashboard (Admin/Librarian access only)."""
+    assert dashboard_service is not None
     summary = await dashboard_service.get_summary(days)
     return APIResponse(
         success=True,

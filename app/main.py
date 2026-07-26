@@ -105,7 +105,7 @@ async def operations_middleware(request: Request, call_next: Any) -> Response:
 
     # Add correlation header to response
     response.headers["x-request-id"] = req_id
-    return response
+    return response  # type: ignore[no-any-return]
 
 
 # Centralized Exception Handlers Mapping Domain Errors
