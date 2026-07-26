@@ -14,14 +14,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy configuration files first to maximize Docker layer caching
+# Copy configuration files and app source code first to allow dependency installation
 COPY --chown=appuser:appgroup pyproject.toml .
 COPY --chown=appuser:appgroup README.md .
-
-RUN pip install --no-cache-dir -e .
-
-# Copy application layers
 COPY --chown=appuser:appgroup app app
+
+RUN pip install --no-cache-dir .
+
+# Copy remaining layers
 COPY --chown=appuser:appgroup tests tests
 COPY --chown=appuser:appgroup docs docs
 
