@@ -24,7 +24,7 @@ router = APIRouter(prefix="/books", tags=["Books Management"])
     "",
     response_model=APIResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(RoleRequirement([UserRole.LIBRARIAN]))],
+    dependencies=[Depends(RoleRequirement([UserRole.LIBRARIAN, UserRole.ADMIN]))],
 )
 async def create_book(
     dto: BookCreateRequest,
@@ -100,7 +100,7 @@ async def get_book(
 @router.patch(
     "/{book_id}",
     response_model=APIResponse,
-    dependencies=[Depends(RoleRequirement([UserRole.LIBRARIAN]))],
+    dependencies=[Depends(RoleRequirement([UserRole.LIBRARIAN, UserRole.ADMIN]))],
 )
 async def update_book(
     book_id: uuid.UUID,
@@ -121,7 +121,7 @@ async def update_book(
     "/{book_id}",
     response_model=APIResponse,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(RoleRequirement([UserRole.LIBRARIAN]))],
+    dependencies=[Depends(RoleRequirement([UserRole.LIBRARIAN, UserRole.ADMIN]))],
 )
 async def delete_book(
     book_id: uuid.UUID,
