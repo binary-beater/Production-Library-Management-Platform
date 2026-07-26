@@ -1,16 +1,16 @@
 """
 Domain Enums — Library Management Platform
 
-All enum values use (str, Enum) so they:
+All enum values use StrEnum so they:
   1. Serialize to plain strings in JSON responses automatically
   2. Are stored as VARCHAR/ENUM in MySQL
   3. Work natively with Pydantic v2 without custom serializers
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """Roles assigned to user accounts for RBAC enforcement."""
 
     ADMIN = "ADMIN"
@@ -18,7 +18,7 @@ class UserRole(str, Enum):
     MEMBER = "MEMBER"
 
 
-class UserStatus(str, Enum):
+class UserStatus(StrEnum):
     """Lifecycle status of a user account."""
 
     ACTIVE = "ACTIVE"
@@ -26,7 +26,7 @@ class UserStatus(str, Enum):
     SUSPENDED = "SUSPENDED"
 
 
-class MembershipStatus(str, Enum):
+class MembershipStatus(StrEnum):
     """Operational status of a library member profile."""
 
     ACTIVE = "ACTIVE"
@@ -34,7 +34,7 @@ class MembershipStatus(str, Enum):
     SUSPENDED = "SUSPENDED"
 
 
-class BorrowStatus(str, Enum):
+class BorrowStatus(StrEnum):
     """
     State machine for a borrow transaction lifecycle.
 
@@ -52,7 +52,7 @@ class BorrowStatus(str, Enum):
     OVERDUE = "OVERDUE"
 
 
-class BookCondition(str, Enum):
+class BookCondition(StrEnum):
     """Physical condition of a book copy."""
 
     NEW = "NEW"
@@ -61,7 +61,7 @@ class BookCondition(str, Enum):
     POOR = "POOR"
 
 
-class TokenType(str, Enum):
+class TokenType(StrEnum):
     """
     Type of authentication token stored in the refresh_tokens table.
     Extensible for future token types (e.g., EMAIL_VERIFICATION, PASSWORD_RESET).
@@ -70,7 +70,7 @@ class TokenType(str, Enum):
     REFRESH = "REFRESH"
 
 
-class ReservationStatus(str, Enum):
+class ReservationStatus(StrEnum):
     """State machine status representing the lifecycle of a book reservation."""
 
     PENDING = "PENDING"

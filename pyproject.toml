@@ -64,6 +64,9 @@ ignore = [
     "PLR2004",  # allow magic numbers (e.g. status code 200) in tests
     "E712",     # allow == False comparison in SQLAlchemy filter queries
     "PLR0913",  # allow > 5 arguments in search signatures
+    "PLR0917",  # allow > 5 positional arguments in constructors / methods
+    "PLC0415",  # allow local imports to prevent circular dependencies
+    "RUF022",    # allow unsorted __all__ lists
     "E501"      # allow long lines (handled by formatter)
 ]
 
