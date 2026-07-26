@@ -16,6 +16,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -176,6 +177,40 @@ async def validation_exception_handler(
                 "detail": "Validation error occurred",  # Backward compatibility mapping key for old tests
                 "error_code": "VALIDATION_ERROR",
                 "details": exc.errors(),
+            }
+        ),
+    )
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_exception_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+    logger.warning("database_integrity_error", path=request.url.path, detail=str(exc))
+    HTTP_EXCEPTIONS_TOTAL.labels(
+        method=request.method,
+        path=request.url.path,
+        exception_type="IntegrityError",
+    ).inc()
+
+    # Try to extract a clean message
+    message = "Database integrity constraint violated"
+    error_msg = str(exc.orig) if exc.orig else str(exc)
+    if "Duplicate entry" in error_msg:
+        if "books.isbn" in error_msg or "isbn" in error_msg:
+            message = "A book with this ISBN already exists"
+        elif "users.email" in error_msg or "email" in error_msg:
+            message = "This email address is already registered"
+        else:
+            message = "A record with this unique identifier already exists"
+
+    return JSONResponse(
+        status_code=400,
+        content=jsonable_encoder(
+            {
+                "success": False,
+                "message": message,
+                "detail": message,
+                "error_code": "IntegrityError",
+                "details": None,
             }
         ),
     )
