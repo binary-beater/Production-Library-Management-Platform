@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BookNotFoundException
+from app.db.transaction import transactional
 from app.models.book import Book
 from app.repositories.book_repository import BookRepository
 from app.services.base import BaseService
@@ -51,6 +52,7 @@ class BookService(BaseService):
         self._log_event("book_get_success", book_id=str(book_id))
         return book
 
+    @transactional
     async def create_book(
         self, title: str, author: str, isbn: str, total_copies: int, genre: str | None = None
     ) -> Book:
@@ -90,6 +92,7 @@ class BookService(BaseService):
         self._log_event("book_created", book_id=str(book.id), isbn=isbn)
         return book
 
+    @transactional
     async def update_book(self, book_id: uuid.UUID, update_data: dict[str, Any]) -> Book:
         """Update metadata properties or modify copy inventories.
 
@@ -137,6 +140,7 @@ class BookService(BaseService):
         self._log_event("inventory_updated", book_id=str(book_id))
         return book
 
+    @transactional
     async def delete_book(self, book_id: uuid.UUID) -> None:
         """Flag a book record as deleted (soft delete).
 
