@@ -1,11 +1,13 @@
 # 📚 Production Library Management Platform
 
+[![CI](https://github.com/binary-beater/Production-Library-Management-Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/binary-beater/Production-Library-Management-Platform/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ![Tests](https://img.shields.io/badge/Tests-68_Passing-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
+
 
 A production-grade backend platform built with **FastAPI**, **SQLAlchemy 2.0**, and **MySQL 8.0**. The system implements secure JWT Authentication, Single-Use Refresh Token Rotation (RTR), soft-deletions, fine calculations, and a high-concurrency FIFO hold-queue for reserving books.
 
